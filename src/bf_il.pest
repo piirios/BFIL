@@ -1,0 +1,38 @@
+
+WHITESPACE = _{" " | "\t" | "\n" | "\r"}
+COMMENT = _{"//"~(!(NEWLINE) ~ ANY)*}
+
+name = @{ ('a'..'z' | 'A'..'Z')+ }
+fname = @{ ('a'..'z' | 'A'..'Z' | '0'..'9')+ }
+number = @{ ('0'..'9')+}
+
+call_args = {(name|number) ~ (","~(name|number))* }
+
+args = {name ~ (","~name)* }
+
+Instruction = {name ~ 
+    "(" ~ call_args? ~ ")"
+}
+
+Loop = {
+    "loop" ~
+    "{" ~
+    (Instruction)+ ~
+    "}"
+}
+
+Function = {"fn" ~ 
+    fname ~ 
+    "(" ~ 
+    args? ~ 
+   	")" ~
+	"{" ~
+    (Instruction|Loop)+ ~
+	"}" 
+}
+
+File = {
+    SOI ~
+    (Instruction | Function | Loop)* ~
+    EOI 
+}

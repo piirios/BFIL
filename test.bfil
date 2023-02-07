@@ -1,0 +1,28 @@
+setconst(25)
+setconst(32)
+goto(1)
+add(5)
+goto(1)
+fn test(a,b,c){
+    goto(a)
+    add(b)
+    loop {
+        left(3)
+        add(2)
+        right(3)
+    }
+    testdeux(25, 28, c)
+    goto(c)
+}
+fn testdeux(a,b,c){
+    add(a)
+    add(b)
+}
+loop {
+    goto(2)
+    add(2)
+    goto(1)
+}
+test(1, 2, 3)
+goto(2)
+print()
