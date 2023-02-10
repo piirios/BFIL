@@ -8,6 +8,7 @@ mod variable;
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::io::Write;
 
 use anyhow::{anyhow, Context, Result};
 use pest::Parser;
@@ -33,6 +34,7 @@ fn main() {
     .nth(1)
     .expect("you need to specify a file to compile"); */
     let name = "test.bfil";
+    let asm_filename = "test.bf";
     let file = fs::read_to_string(name).expect("cannot read file");
     let (ist_res, function_name) = Instruction::parse(file); //.expect("failed to parse programs")
     let mut ist = ist_res.expect("failed to parse programs");
@@ -41,12 +43,19 @@ fn main() {
     let mut set = HashSet::new();
     let ist = replace_function(&ist, &mapping, &mut set).expect("cannot replace function");
 
+    dbg!(&ist);
     let (mut res, _) = transform_goto(ist, Outputpointer::default());
 
     let brainfuck_code = optimize_consecutive(res.expect("failed to transform goto"))
         .into_iter()
         .map(|ist_inner| produce_string(ist_inner))
         .collect::<String>();
+
+    let mut res_file =
+        fs::File::create(asm_filename).expect("failed to created the file for the asm");
+    res_file
+        .write_all(brainfuck_code.as_bytes())
+        .expect("failed to write brainfuck code");
 
     dbg!(brainfuck_code);
     println!("Hello, world!");

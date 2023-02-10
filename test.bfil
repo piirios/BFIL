@@ -25,4 +25,7 @@ loop {
 }
 test(1, 2, 3)
 goto(2)
+loop {
+    left(1)
+}
 print()

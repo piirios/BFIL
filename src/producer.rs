@@ -7,10 +7,30 @@ pub fn produce_string(ist: FlattenedInstruction) -> String {
     match ist {
         FlattenedInstruction::Noop => String::default(),
         FlattenedInstruction::Print => String::from(","),
-        FlattenedInstruction::Add(val) => "+".repeat(val),
-        FlattenedInstruction::Sub(val) => "-".repeat(val),
-        FlattenedInstruction::Left(val) => "<".repeat(val),
-        FlattenedInstruction::Right(val) => ">".repeat(val),
+        FlattenedInstruction::Add(val) => {
+            let mut s = String::new();
+            s.push_str(&"+".repeat(val));
+            s.push_str("\n");
+            s
+        }
+        FlattenedInstruction::Sub(val) => {
+            let mut s = String::new();
+            s.push_str(&"-".repeat(val));
+            s.push_str("\n");
+            s
+        }
+        FlattenedInstruction::Left(val) => {
+            let mut s = String::new();
+            s.push_str(&"<".repeat(val));
+            s.push_str("\n");
+            s
+        }
+        FlattenedInstruction::Right(val) => {
+            let mut s = String::new();
+            s.push_str(&">".repeat(val));
+            s.push_str("\n");
+            s
+        }
         FlattenedInstruction::SetConst(val) => {
             let mut s = String::from("[-]");
             s.push_str(&"+".repeat(val));

@@ -4,3 +4,8 @@
 struct Context {
     name: String,
 }
+
+enum ContextType {
+    FunctionDeclaration(String),
+    Goto,
+}

@@ -7,7 +7,7 @@ use anyhow::{anyhow, Context, Result};
 use either::Either;
 
 /* structure permettant de suivre au cours des instructions le positionnement de la tête de lecture */
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Outputpointer {
     Predictable(isize),
     Unpredictable,
@@ -47,38 +47,24 @@ impl Add for Outputpointer {
 }
 
 /* fonction permettant de faire évoluer au cours d'une suite d'instruction la position de la tête de lecture */
-fn predict_position(
-    ist_list: &Vec<FlattenedInstruction>,
-    start_pos: Outputpointer,
-) -> Outputpointer {
-    ist_list
-        .iter()
-        .fold(Outputpointer::default(), |acc, ist| match ist {
-            FlattenedInstruction::Left(val) => acc + ((-(*val as isize)).into()),
-            FlattenedInstruction::Right(val) => acc + (*val as isize).into(),
-            FlattenedInstruction::Loop(inner) => {
-                if predict_position(&inner, acc) == acc {
-                    acc
-                } else {
-                    Outputpointer::Unpredictable
-                }
-            }
-            _ => acc,
-        })
-}
 
 /* fonction permettant de faire évoluer au cours d'une instruction la position de la tête de lecture */
-fn add_position_single(ist: &FlattenedInstruction, start_pos: Outputpointer) -> Outputpointer {
-    match ist {
+fn add_position_single(start_pos: Outputpointer, ist: &FlattenedInstruction) -> Outputpointer {
+    dbg!(start_pos);
+    match dbg!(ist) {
         FlattenedInstruction::Left(val) => start_pos + ((-(*val as isize)).into()),
         FlattenedInstruction::Right(val) => start_pos + (*val as isize).into(),
-        FlattenedInstruction::Loop(inner) => {
-            if predict_position(&inner, start_pos) == start_pos {
-                start_pos
-            } else {
-                Outputpointer::Unpredictable
-            }
+        FlattenedInstruction::Goto(val) => (*val as isize).into(),
+        FlattenedInstruction::Loop(inner) => unreachable!(), /* {
+        let final_pos = inner
+        .iter()
+        .fold(Outputpointer::default(), add_position_single);
+        if final_pos == start_pos {
+        start_pos
+        } else {
+        Outputpointer::Unpredictable
         }
+        } */
         _ => start_pos,
     }
 }
@@ -95,31 +81,33 @@ pub fn transform_goto(
     (
         ist_list
             .into_iter()
-            .map(|ist| {
-                position = add_position_single(&ist, position);
-                match ist {
-                    FlattenedInstruction::Goto(to_pos) => {
-                        let actual_pos = position.get_value()?;
-                        if to_pos as isize == actual_pos {
-                            Ok(FlattenedInstruction::Noop)
-                        } else if (to_pos as isize) < actual_pos {
-                            Ok(FlattenedInstruction::Left(
-                                (actual_pos - (to_pos as isize)).try_into().unwrap(),
-                            ))
-                        } else {
-                            Ok(FlattenedInstruction::Right(
-                                ((to_pos as isize) - actual_pos).try_into().unwrap(),
-                            ))
-                        }
+            .map(|ist| match ist {
+                FlattenedInstruction::Goto(to_pos) => {
+                    let actual_pos = position.get_value()?;
+                    if to_pos as isize == actual_pos {
+                        Ok(FlattenedInstruction::Noop)
+                    } else if (to_pos as isize) < actual_pos {
+                        position = add_position_single(position, &ist);
+                        Ok(FlattenedInstruction::Left(
+                            (actual_pos - (to_pos as isize)).try_into().unwrap(),
+                        ))
+                    } else {
+                        position = add_position_single(position, &ist);
+                        Ok(FlattenedInstruction::Right(
+                            ((to_pos as isize) - actual_pos).try_into().unwrap(),
+                        ))
                     }
-                    FlattenedInstruction::Loop(inner) => {
-                        let (res, position) = transform_goto(inner, position);
-                        Ok(FlattenedInstruction::Loop(res?))
+                }
+                FlattenedInstruction::Loop(inner) => {
+                    let (res, position_inner) = transform_goto(inner, position);
+                    if position != position_inner {
+                        position = Outputpointer::Unpredictable;
                     }
-                    e => {
-                        position = add_position_single(&e, position);
-                        Ok(e)
-                    }
+                    Ok(FlattenedInstruction::Loop(res?))
+                }
+                e => {
+                    position = add_position_single(position, &e);
+                    Ok(e)
                 }
             })
             .collect::<Result<Vec<_>>>(),

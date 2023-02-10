@@ -7,6 +7,7 @@ use crate::instruction::Instruction;
 use crate::variable::Variable;
 
 /* après que l'on remplace les fonctions, on n'a plus besoins de certain champs, donc on utilise une nouvelle structure */
+#[derive(Debug)]
 pub enum FlattenedInstruction {
     Noop,
     Print,
